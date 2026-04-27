@@ -81,3 +81,27 @@ func TestOpsGenieAlerter_Send_NonOKStatus(t *testing.T) {
 		t.Errorf("expected error to mention status code 401, got: %v", err)
 	}
 }
+
+func TestOpsGenieAlerter_Send_ContentTypeHeader(t *testing.T) {
+	var contentType string
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contentType = r.Header.Get("Content-Type")
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer ts.Close()
+
+	a, err := NewOpsGenieAlerter("my-api-key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	a.apiURL = ts.URL
+
+	if err := a.Send("secret/db/password", 24*time.Hour); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(contentType, "application/json") {
+		t.Errorf("expected Content-Type application/json, got: %s", contentType)
+	}
+}
