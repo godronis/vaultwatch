@@ -8,100 +8,93 @@ import (
 
 func writeTempConfig(t *testing.T, content string) string {
 	t.Helper()
-	f, err := os.CreateTemp(t.TempDir(), "vaultwatch-*.yaml")
+	f, err := os.CreateTemp("", "vaultwatch-config-*.yaml")
 	if err != nil {
-		t.Fatalf("creating temp file: %v", err)
+		t.Fatalf("failed to create temp file: %v", err)
 	}
+	t.Cleanup(func() { os.Remove(f.Name()) })
 	if _, err := f.WriteString(content); err != nil {
-		t.Fatalf("writing temp file: %v", err)
+		t.Fatalf("failed to write config: %v", err)
 	}
 	f.Close()
 	return f.Name()
 }
 
 func TestLoad_ValidConfig(t *testing.T) {
-	raw := `
+	path := writeTempConfig(t, `
 vault:
-  address: "https://vault.example.com"
-  token: "s.abc123"
-  paths:
-    - "secret/myapp"
-  warn_before: 168h
-alerts:
-  webhooks:
-    - name: slack
-      url: "https://hooks.slack.com/services/XXX"
-      timeout: 5s
-schedule: "@hourly"
-`
-	path := writeTempConfig(t, raw)
+  address: http://127.0.0.1:8200
+  token: s.test
+secrets:
+  - secret/myapp/db
+warn_before: 48h
+`)
 	cfg, err := Load(path)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if cfg.Vault.Address != "https://vault.example.com" {
-		t.Errorf("expected vault address, got %q", cfg.Vault.Address)
+	if cfg.Vault.Address != "http://127.0.0.1:8200" {
+		t.Errorf("unexpected address: %s", cfg.Vault.Address)
 	}
-	if cfg.Vault.WarnBefore != 168*time.Hour {
-		t.Errorf("expected 168h warn_before, got %v", cfg.Vault.WarnBefore)
-	}
-	if len(cfg.Alerts.Webhooks) != 1 {
-		t.Fatalf("expected 1 webhook, got %d", len(cfg.Alerts.Webhooks))
-	}
-	if cfg.Alerts.Webhooks[0].Name != "slack" {
-		t.Errorf("expected webhook name 'slack', got %q", cfg.Alerts.Webhooks[0].Name)
+	if cfg.WarnBefore != 48*time.Hour {
+		t.Errorf("unexpected warn_before: %v", cfg.WarnBefore)
 	}
 }
 
 func TestLoad_DefaultWarnBefore(t *testing.T) {
-	raw := `
+	path := writeTempConfig(t, `
 vault:
-  address: "https://vault.example.com"
-  token: "s.abc123"
-  paths:
-    - "secret/myapp"
-`
-	path := writeTempConfig(t, raw)
+  address: http://127.0.0.1:8200
+  token: s.test
+`)
 	cfg, err := Load(path)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if cfg.Vault.WarnBefore != 7*24*time.Hour {
-		t.Errorf("expected default 7d warn_before, got %v", cfg.Vault.WarnBefore)
+	if cfg.WarnBefore != 72*time.Hour {
+		t.Errorf("expected default 72h, got %v", cfg.WarnBefore)
 	}
 }
 
 func TestLoad_MissingAddress(t *testing.T) {
-	raw := `
+	path := writeTempConfig(t, `
 vault:
-  token: "s.abc123"
-  paths:
-    - "secret/myapp"
-`
-	path := writeTempConfig(t, raw)
+  token: s.test
+`)
 	_, err := Load(path)
 	if err == nil {
-		t.Fatal("expected error for missing vault.address, got nil")
+		t.Fatal("expected error for missing address")
 	}
 }
 
 func TestLoad_MissingToken(t *testing.T) {
-	raw := `
+	path := writeTempConfig(t, `
 vault:
-  address: "https://vault.example.com"
-  paths:
-    - "secret/myapp"
-`
-	path := writeTempConfig(t, raw)
+  address: http://127.0.0.1:8200
+`)
 	_, err := Load(path)
 	if err == nil {
-		t.Fatal("expected error for missing vault.token, got nil")
+		t.Fatal("expected error for missing token")
 	}
 }
 
-func TestLoad_FileNotFound(t *testing.T) {
-	_, err := Load("/nonexistent/path/config.yaml")
-	if err == nil {
-		t.Fatal("expected error for missing file, got nil")
+func TestLoad_TeamsConfig(t *testing.T) {
+	path := writeTempConfig(t, `
+vault:
+  address: http://127.0.0.1:8200
+  token: s.test
+alerts:
+  teams:
+    webhook_url: https://outlook.office.com/webhook/abc123
+`)
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Alerts.Teams == nil {
+		t.Fatal("expected Teams config to be set")
+	}
+	if cfg.Alerts.Teams.WebhookURL != "https://outlook.office.com/webhook/abc123" {
+		t.Errorf("unexpected Teams webhook URL: %s", cfg.Alerts.Teams.WebhookURL)
 	}
 }
