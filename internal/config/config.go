@@ -10,15 +10,15 @@ import (
 
 // Config holds all vaultwatch configuration.
 type Config struct {
-	Vault   VaultConfig   `yaml:"vault"`
-	Alerts  AlertsConfig  `yaml:"alerts"`
+	Vault      VaultConfig   `yaml:"vault"`
+	Alerts     AlertsConfig  `yaml:"alerts"`
 	WarnBefore time.Duration `yaml:"warn_before"`
 }
 
 // VaultConfig holds Vault connection settings.
 type VaultConfig struct {
-	Address string `yaml:"address"`
-	Token   string `yaml:"token"`
+	Address string   `yaml:"address"`
+	Token   string   `yaml:"token"`
 	Paths   []string `yaml:"paths"`
 }
 
@@ -65,15 +65,23 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("config: failed to parse yaml: %w", err)
 	}
 
-	if cfg.Vault.Address == "" {
-		return nil, fmt.Errorf("config: vault.address is required")
-	}
-	if cfg.Vault.Token == "" {
-		return nil, fmt.Errorf("config: vault.token is required")
-	}
-	if cfg.WarnBefore == 0 {
-		cfg.WarnBefore = defaultWarnBefore
+	if err := cfg.validate(); err != nil {
+		return nil, err
 	}
 
 	return &cfg, nil
+}
+
+// validate checks that all required fields are present and applies defaults.
+func (c *Config) validate() error {
+	if c.Vault.Address == "" {
+		return fmt.Errorf("config: vault.address is required")
+	}
+	if c.Vault.Token == "" {
+		return fmt.Errorf("config: vault.token is required")
+	}
+	if c.WarnBefore == 0 {
+		c.WarnBefore = defaultWarnBefore
+	}
+	return nil
 }
