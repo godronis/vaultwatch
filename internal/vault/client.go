@@ -14,6 +14,20 @@ type SecretMeta struct {
 	TTL       time.Duration
 }
 
+// IsExpired returns true if the secret has already passed its expiration time.
+func (s *SecretMeta) IsExpired() bool {
+	return time.Now().After(s.ExpiresAt)
+}
+
+// TimeUntilExpiry returns the duration remaining until the secret expires.
+// Returns 0 if the secret is already expired.
+func (s *SecretMeta) TimeUntilExpiry() time.Duration {
+	if s.IsExpired() {
+		return 0
+	}
+	return time.Until(s.ExpiresAt)
+}
+
 // Client wraps the Vault API client.
 type Client struct {
 	vc *vaultapi.Client
