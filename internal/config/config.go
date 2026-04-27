@@ -4,88 +4,82 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
+// Config holds the full vaultwatch configuration.
 type Config struct {
-	Vault   VaultConfig    `yaml:"vault"`
-	Alerts  AlertsConfig   `yaml:"alerts"`
-	Monitor MonitorConfig  `yaml:"monitor"`
+	Vault   VaultConfig   `yaml:"vault"`
+	Alerts  AlertsConfig  `yaml:"alerts"`
+	Monitor MonitorConfig `yaml:"monitor"`
 }
 
+// VaultConfig holds Vault connection settings.
 type VaultConfig struct {
 	Address string `yaml:"address"`
 	Token   string `yaml:"token"`
 	Paths   []string `yaml:"paths"`
 }
 
+// MonitorConfig controls polling behaviour.
 type MonitorConfig struct {
-	WarnBefore time.Duration `yaml:"warn_before"`
 	Interval   time.Duration `yaml:"interval"`
+	WarnBefore time.Duration `yaml:"warn_before"`
 }
 
+// AlertsConfig lists all optional alerting back-ends.
 type AlertsConfig struct {
-	Webhook   *WebhookConfig   `yaml:"webhook,omitempty"`
-	Slack     *SlackConfig     `yaml:"slack,omitempty"`
-	PagerDuty *PagerDutyConfig `yaml:"pagerduty,omitempty"`
-	OpsGenie  *OpsGenieConfig  `yaml:"opsgenie,omitempty"`
-	Email     *EmailConfig     `yaml:"email,omitempty"`
-	Teams     *TeamsConfig     `yaml:"teams,omitempty"`
-	Datadog   *DatadogConfig   `yaml:"datadog,omitempty"`
+	Webhook   *WebhookAlertConfig   `yaml:"webhook,omitempty"`
+	Slack     *SlackAlertConfig     `yaml:"slack,omitempty"`
+	PagerDuty *PagerDutyAlertConfig `yaml:"pagerduty,omitempty"`
+	OpsGenie  *OpsGenieAlertConfig  `yaml:"opsgenie,omitempty"`
+	Email     *EmailAlertConfig     `yaml:"email,omitempty"`
+	Teams     *TeamsAlertConfig     `yaml:"teams,omitempty"`
+	Datadog   *DatadogAlertConfig   `yaml:"datadog,omitempty"`
+	SNS       *SNSAlertConfig       `yaml:"sns,omitempty"`
 }
 
-type WebhookConfig struct {
+// SNSAlertConfig holds AWS SNS alerting configuration.
+type SNSAlertConfig struct {
+	TopicARN string `yaml:"topic_arn"`
+}
+
+type WebhookAlertConfig struct {
 	URL     string            `yaml:"url"`
 	Headers map[string]string `yaml:"headers,omitempty"`
 }
-
-type SlackConfig struct {
-	WebhookURL string `yaml:"webhook_url"`
-}
-
-type PagerDutyConfig struct {
-	IntegrationKey string `yaml:"integration_key"`
-}
-
-type OpsGenieConfig struct {
-	APIKey string `yaml:"api_key"`
-}
-
-type EmailConfig struct {
+type SlackAlertConfig struct{ URL string `yaml:"url"` }
+type PagerDutyAlertConfig struct{ IntegrationKey string `yaml:"integration_key"` }
+type OpsGenieAlertConfig struct{ APIKey string `yaml:"api_key"` }
+type EmailAlertConfig struct {
 	Host       string   `yaml:"host"`
 	Port       int      `yaml:"port"`
 	From       string   `yaml:"from"`
 	Recipients []string `yaml:"recipients"`
-	Username   string   `yaml:"username,omitempty"`
-	Password   string   `yaml:"password,omitempty"`
 }
+type TeamsAlertConfig struct{ URL string `yaml:"url"` }
+type DatadogAlertConfig struct{ APIKey string `yaml:"api_key"` }
 
-type TeamsConfig struct {
-	WebhookURL string `yaml:"webhook_url"`
-}
-
-type DatadogConfig struct {
-	APIKey string `yaml:"api_key"`
-}
-
+// Load reads and validates a YAML config file at the given path.
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("config: failed to read file: %w", err)
+		return nil, fmt.Errorf("config: cannot read file: %w", err)
 	}
 
 	var cfg Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("config: failed to parse YAML: %w", err)
+		return nil, fmt.Errorf("config: invalid YAML: %w", err)
 	}
 
 	if cfg.Monitor.WarnBefore == 0 {
-		cfg.Monitor.WarnBefore = 7 * 24 * time.Hour
+		cfg.Monitor.WarnBefore = 72 * time.Hour
 	}
 	if cfg.Monitor.Interval == 0 {
-		cfg.Monitor.Interval = 1 * time.Hour
+		cfg.Monitor.Interval = 5 * time.Minute
 	}
 
 	if err := validate(&cfg); err != nil {
@@ -106,18 +100,11 @@ func validate(cfg *Config) error {
 		errs = append(errs, "vault.paths must contain at least one path")
 	}
 	if len(errs) > 0 {
-		return errors.New("config validation failed: " + joinStrings(errs))
+		return errors.New("config validation failed: " + joinStrings(errs, "; "))
 	}
 	return nil
 }
 
-func joinStrings(ss []string) string {
-	out := ""
-	for i, s := range ss {
-		if i > 0 {
-			out += "; "
-		}
-		out += s
-	}
-	return out
+func joinStrings(ss []string, sep string) string {
+	return strings.Join(ss, sep)
 }
