@@ -8,74 +8,72 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Config holds the top-level VaultWatch configuration.
+// Config holds all vaultwatch configuration.
 type Config struct {
-	Vault    VaultConfig    `yaml:"vault"`
-	Alerts   AlertsConfig   `yaml:"alerts"`
-	Schedule string         `yaml:"schedule"`
+	Vault   VaultConfig   `yaml:"vault"`
+	Alerts  AlertsConfig  `yaml:"alerts"`
+	WarnBefore time.Duration `yaml:"warn_before"`
 }
 
 // VaultConfig holds Vault connection settings.
 type VaultConfig struct {
-	Address   string        `yaml:"address"`
-	Token     string        `yaml:"token"`
-	Namespace string        `yaml:"namespace"`
-	Paths     []string      `yaml:"paths"`
-	WarnBefore time.Duration `yaml:"warn_before"`
+	Address string `yaml:"address"`
+	Token   string `yaml:"token"`
+	Paths   []string `yaml:"paths"`
 }
 
-// AlertsConfig holds webhook alert destinations.
+// AlertsConfig holds all alerting backend configurations.
 type AlertsConfig struct {
-	Webhooks []WebhookConfig `yaml:"webhooks"`
+	Webhook   *WebhookConfig   `yaml:"webhook,omitempty"`
+	Slack     *SlackConfig     `yaml:"slack,omitempty"`
+	PagerDuty *PagerDutyConfig `yaml:"pagerduty,omitempty"`
+	OpsGenie  *OpsGenieConfig  `yaml:"opsgenie,omitempty"`
 }
 
-// WebhookConfig defines a single webhook endpoint.
+// WebhookConfig holds generic webhook settings.
 type WebhookConfig struct {
-	Name    string            `yaml:"name"`
 	URL     string            `yaml:"url"`
-	Headers map[string]string `yaml:"headers"`
-	Timeout time.Duration     `yaml:"timeout"`
+	Headers map[string]string `yaml:"headers,omitempty"`
 }
 
-// Load reads and parses a YAML config file from the given path.
+// SlackConfig holds Slack webhook settings.
+type SlackConfig struct {
+	WebhookURL string `yaml:"webhook_url"`
+}
+
+// PagerDutyConfig holds PagerDuty integration settings.
+type PagerDutyConfig struct {
+	IntegrationKey string `yaml:"integration_key"`
+}
+
+// OpsGenieConfig holds OpsGenie integration settings.
+type OpsGenieConfig struct {
+	APIKey string `yaml:"api_key"`
+}
+
+const defaultWarnBefore = 72 * time.Hour
+
+// Load reads and validates the configuration from the given file path.
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("reading config file %q: %w", path, err)
+		return nil, fmt.Errorf("config: failed to read file: %w", err)
 	}
 
 	var cfg Config
 	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("parsing config file %q: %w", path, err)
+		return nil, fmt.Errorf("config: failed to parse yaml: %w", err)
 	}
 
-	if err := cfg.validate(); err != nil {
-		return nil, fmt.Errorf("invalid config: %w", err)
+	if cfg.Vault.Address == "" {
+		return nil, fmt.Errorf("config: vault.address is required")
+	}
+	if cfg.Vault.Token == "" {
+		return nil, fmt.Errorf("config: vault.token is required")
+	}
+	if cfg.WarnBefore == 0 {
+		cfg.WarnBefore = defaultWarnBefore
 	}
 
 	return &cfg, nil
-}
-
-func (c *Config) validate() error {
-	if c.Vault.Address == "" {
-		return fmt.Errorf("vault.address is required")
-	}
-	if c.Vault.Token == "" {
-		return fmt.Errorf("vault.token is required")
-	}
-	if len(c.Vault.Paths) == 0 {
-		return fmt.Errorf("vault.paths must contain at least one path")
-	}
-	if c.Vault.WarnBefore == 0 {
-		c.Vault.WarnBefore = 7 * 24 * time.Hour // default: 7 days
-	}
-	for i, wh := range c.Alerts.Webhooks {
-		if wh.URL == "" {
-			return fmt.Errorf("alerts.webhooks[%d].url is required", i)
-		}
-		if wh.Timeout == 0 {
-			c.Alerts.Webhooks[i].Timeout = 10 * time.Second
-		}
-	}
-	return nil
 }
