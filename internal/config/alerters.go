@@ -1,68 +1,79 @@
 package config
 
-// TelegramConfig holds configuration for the Telegram alerter.
-type TelegramConfig struct {
-	BotToken string `yaml:"bot_token"`
-	ChatID   string `yaml:"chat_id"`
-}
-
-// AlertConfig aggregates all supported alerter configurations.
-// Each field is optional; only configured alerters will be activated.
+// AlertConfig holds configuration for all supported alerter integrations.
 type AlertConfig struct {
-	Webhook   *WebhookAlertConfig   `yaml:"webhook,omitempty"`
-	Slack     *SlackAlertConfig     `yaml:"slack,omitempty"`
-	PagerDuty *PagerDutyAlertConfig `yaml:"pagerduty,omitempty"`
-	OpsGenie  *OpsGenieAlertConfig  `yaml:"opsgenie,omitempty"`
-	Email     *EmailAlertConfig     `yaml:"email,omitempty"`
-	Teams     *TeamsAlertConfig     `yaml:"teams,omitempty"`
-	Datadog   *DatadogAlertConfig   `yaml:"datadog,omitempty"`
-	SNS       *SNSAlertConfig       `yaml:"sns,omitempty"`
-	Telegram  *TelegramConfig       `yaml:"telegram,omitempty"`
+	// Webhook
+	WebhookURL     string            `yaml:"webhook_url"`
+	WebhookHeaders map[string]string `yaml:"webhook_headers"`
+
+	// Slack
+	SlackURL string `yaml:"slack_url"`
+
+	// PagerDuty
+	PagerDutyKey string `yaml:"pagerduty_key"`
+
+	// OpsGenie
+	OpsGenieKey string `yaml:"opsgenie_key"`
+
+	// Email
+	EmailHost       string   `yaml:"email_host"`
+	EmailPort       int      `yaml:"email_port"`
+	EmailFrom       string   `yaml:"email_from"`
+	EmailTo         []string `yaml:"email_to"`
+	EmailUsername   string   `yaml:"email_username"`
+	EmailPassword   string   `yaml:"email_password"`
+
+	// Microsoft Teams
+	TeamsURL string `yaml:"teams_url"`
+
+	// Datadog
+	DatadogAPIKey string   `yaml:"datadog_api_key"`
+	DatadogTags   []string `yaml:"datadog_tags"`
+
+	// AWS SNS
+	SNSTopicARN string `yaml:"sns_topic_arn"`
+	SNSRegion   string `yaml:"sns_region"`
+
+	// Telegram
+	TelegramToken  string `yaml:"telegram_token"`
+	TelegramChatID string `yaml:"telegram_chat_id"`
+
+	// VictorOps
+	VictorOpsURL string `yaml:"victorops_url"`
 }
 
-// WebhookAlertConfig holds generic webhook alerter settings.
-type WebhookAlertConfig struct {
-	URL     string            `yaml:"url"`
-	Headers map[string]string `yaml:"headers,omitempty"`
-}
-
-// SlackAlertConfig holds Slack webhook settings.
-type SlackAlertConfig struct {
-	WebhookURL string `yaml:"webhook_url"`
-}
-
-// PagerDutyAlertConfig holds PagerDuty integration settings.
-type PagerDutyAlertConfig struct {
-	IntegrationKey string `yaml:"integration_key"`
-}
-
-// OpsGenieAlertConfig holds OpsGenie API settings.
-type OpsGenieAlertConfig struct {
-	APIKey string `yaml:"api_key"`
-}
-
-// EmailAlertConfig holds SMTP email alerter settings.
-type EmailAlertConfig struct {
-	Host       string   `yaml:"host"`
-	Port       int      `yaml:"port"`
-	From       string   `yaml:"from"`
-	Recipients []string `yaml:"recipients"`
-	Username   string   `yaml:"username,omitempty"`
-	Password   string   `yaml:"password,omitempty"`
-}
-
-// TeamsAlertConfig holds Microsoft Teams webhook settings.
-type TeamsAlertConfig struct {
-	WebhookURL string `yaml:"webhook_url"`
-}
-
-// DatadogAlertConfig holds Datadog API settings.
-type DatadogAlertConfig struct {
-	APIKey string `yaml:"api_key"`
-}
-
-// SNSAlertConfig holds AWS SNS alerter settings.
-type SNSAlertConfig struct {
-	TopicARN string `yaml:"topic_arn"`
-	Region   string `yaml:"region"`
+// EnabledAlerters returns a list of alerter names that have been configured.
+func (a *AlertConfig) EnabledAlerters() []string {
+	var enabled []string
+	if a.WebhookURL != "" {
+		enabled = append(enabled, "webhook")
+	}
+	if a.SlackURL != "" {
+		enabled = append(enabled, "slack")
+	}
+	if a.PagerDutyKey != "" {
+		enabled = append(enabled, "pagerduty")
+	}
+	if a.OpsGenieKey != "" {
+		enabled = append(enabled, "opsgenie")
+	}
+	if a.EmailHost != "" {
+		enabled = append(enabled, "email")
+	}
+	if a.TeamsURL != "" {
+		enabled = append(enabled, "teams")
+	}
+	if a.DatadogAPIKey != "" {
+		enabled = append(enabled, "datadog")
+	}
+	if a.SNSTopicARN != "" {
+		enabled = append(enabled, "sns")
+	}
+	if a.TelegramToken != "" {
+		enabled = append(enabled, "telegram")
+	}
+	if a.VictorOpsURL != "" {
+		enabled = append(enabled, "victorops")
+	}
+	return enabled
 }

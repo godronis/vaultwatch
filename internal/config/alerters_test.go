@@ -6,56 +6,56 @@ import (
 
 func TestAlertConfig_TelegramFields(t *testing.T) {
 	cfg := AlertConfig{
-		Telegram: &TelegramConfig{
-			BotToken: "bot123:ABC",
-			ChatID:   "-1001234567890",
-		},
+		TelegramToken:  "bot123",
+		TelegramChatID: "-1001234567890",
 	}
-
-	if cfg.Telegram == nil {
-		t.Fatal("expected Telegram config to be set")
+	if cfg.TelegramToken != "bot123" {
+		t.Errorf("expected TelegramToken 'bot123', got %q", cfg.TelegramToken)
 	}
-	if cfg.Telegram.BotToken != "bot123:ABC" {
-		t.Errorf("unexpected BotToken: %s", cfg.Telegram.BotToken)
-	}
-	if cfg.Telegram.ChatID != "-1001234567890" {
-		t.Errorf("unexpected ChatID: %s", cfg.Telegram.ChatID)
+	if cfg.TelegramChatID != "-1001234567890" {
+		t.Errorf("expected TelegramChatID '-1001234567890', got %q", cfg.TelegramChatID)
 	}
 }
 
 func TestAlertConfig_AllNilByDefault(t *testing.T) {
 	cfg := AlertConfig{}
-
-	if cfg.Webhook != nil {
-		t.Error("expected Webhook to be nil")
-	}
-	if cfg.Slack != nil {
-		t.Error("expected Slack to be nil")
-	}
-	if cfg.PagerDuty != nil {
-		t.Error("expected PagerDuty to be nil")
-	}
-	if cfg.Telegram != nil {
-		t.Error("expected Telegram to be nil")
+	enabled := cfg.EnabledAlerters()
+	if len(enabled) != 0 {
+		t.Errorf("expected no enabled alerters, got %v", enabled)
 	}
 }
 
 func TestAlertConfig_MultipleAlertersSet(t *testing.T) {
 	cfg := AlertConfig{
-		Slack: &SlackAlertConfig{WebhookURL: "https://hooks.slack.com/test"},
-		Telegram: &TelegramConfig{BotToken: "tok", ChatID: "42"},
-		Email: &EmailAlertConfig{
-			Host:       "smtp.example.com",
-			Port:       587,
-			From:       "alerts@example.com",
-			Recipients: []string{"admin@example.com"},
-		},
+		SlackURL:      "https://hooks.slack.com/test",
+		PagerDutyKey:  "pdkey",
+		VictorOpsURL:  "https://alert.victorops.com/integrations/generic/1/alert/token/route",
 	}
+	enabled := cfg.EnabledAlerters()
+	if len(enabled) != 3 {
+		t.Errorf("expected 3 enabled alerters, got %d: %v", len(enabled), enabled)
+	}
+	has := func(name string) bool {
+		for _, e := range enabled {
+			if e == name {
+				return true
+			}
+		}
+		return false
+	}
+	for _, name := range []string{"slack", "pagerduty", "victorops"} {
+		if !has(name) {
+			t.Errorf("expected %q in enabled alerters", name)
+		}
+	}
+}
 
-	if cfg.Slack == nil || cfg.Telegram == nil || cfg.Email == nil {
-		t.Error("expected all three alerters to be configured")
+func TestAlertConfig_VictorOpsURL(t *testing.T) {
+	cfg := AlertConfig{
+		VictorOpsURL: "https://alert.victorops.com/integrations/generic/1/alert/token/route",
 	}
-	if cfg.Email.Port != 587 {
-		t.Errorf("unexpected email port: %d", cfg.Email.Port)
+	enabled := cfg.EnabledAlerters()
+	if len(enabled) != 1 || enabled[0] != "victorops" {
+		t.Errorf("expected [victorops], got %v", enabled)
 	}
 }
