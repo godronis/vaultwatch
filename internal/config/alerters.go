@@ -1,6 +1,7 @@
 package config
 
-// AlertConfig holds configuration for all supported alerter integrations.
+// AlertConfig holds optional configuration for each supported alerter.
+// Only fields relevant to the configured alerter type need to be set.
 type AlertConfig struct {
 	// Webhook
 	WebhookURL     string            `yaml:"webhook_url"`
@@ -40,40 +41,4 @@ type AlertConfig struct {
 
 	// VictorOps
 	VictorOpsURL string `yaml:"victorops_url"`
-}
-
-// EnabledAlerters returns a list of alerter names that have been configured.
-func (a *AlertConfig) EnabledAlerters() []string {
-	var enabled []string
-	if a.WebhookURL != "" {
-		enabled = append(enabled, "webhook")
-	}
-	if a.SlackURL != "" {
-		enabled = append(enabled, "slack")
-	}
-	if a.PagerDutyKey != "" {
-		enabled = append(enabled, "pagerduty")
-	}
-	if a.OpsGenieKey != "" {
-		enabled = append(enabled, "opsgenie")
-	}
-	if a.EmailHost != "" {
-		enabled = append(enabled, "email")
-	}
-	if a.TeamsURL != "" {
-		enabled = append(enabled, "teams")
-	}
-	if a.DatadogAPIKey != "" {
-		enabled = append(enabled, "datadog")
-	}
-	if a.SNSTopicARN != "" {
-		enabled = append(enabled, "sns")
-	}
-	if a.TelegramToken != "" {
-		enabled = append(enabled, "telegram")
-	}
-	if a.VictorOpsURL != "" {
-		enabled = append(enabled, "victorops")
-	}
-	return enabled
 }

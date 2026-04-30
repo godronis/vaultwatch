@@ -23,6 +23,7 @@ type victorOpsPayload struct {
 }
 
 // NewVictorOpsAlerter creates a new VictorOpsAlerter.
+// webhookURL is the VictorOps REST endpoint URL including routing key.
 func NewVictorOpsAlerter(webhookURL string) (*VictorOpsAlerter, error) {
 	if webhookURL == "" {
 		return nil, fmt.Errorf("victorops: webhook URL must not be empty")
@@ -33,22 +34,22 @@ func NewVictorOpsAlerter(webhookURL string) (*VictorOpsAlerter, error) {
 	}, nil
 }
 
-// Send delivers an alert payload to VictorOps.
-func (v *VictorOpsAlerter) Send(p Payload) error {
-	body := victorOpsPayload{
+// Send delivers an alert to VictorOps for the given secret path and expiry message.
+func (v *VictorOpsAlerter) Send(path, message string) error {
+	payload := victorOpsPayload{
 		MessageType:       "CRITICAL",
-		EntityID:          p.Path,
-		EntityDisplayName: fmt.Sprintf("Vault secret expiring: %s", p.Path),
-		StateMessage:      fmt.Sprintf("Secret at path '%s' expires at %s", p.Path, p.ExpiresAt),
+		EntityID:          path,
+		EntityDisplayName: fmt.Sprintf("Vault Secret Expiring: %s", path),
+		StateMessage:      message,
 		Timestamp:         time.Now().Unix(),
 	}
 
-	data, err := json.Marshal(body)
+	body, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("victorops: failed to marshal payload: %w", err)
 	}
 
-	resp, err := v.client.Post(v.webhookURL, "application/json", bytes.NewReader(data))
+	resp, err := v.client.Post(v.webhookURL, "application/json", bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("victorops: request failed: %w", err)
 	}
