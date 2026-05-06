@@ -1,13 +1,13 @@
 package config
 
-// AlertConfig holds configuration for all supported alerter backends.
+// AlertConfig holds configuration for all supported alerter integrations.
 type AlertConfig struct {
 	// Webhook
 	WebhookURL     string            `yaml:"webhook_url"`
 	WebhookHeaders map[string]string `yaml:"webhook_headers"`
 
 	// Slack
-	SlackURL string `yaml:"slack_url"`
+	SlackWebhookURL string `yaml:"slack_webhook_url"`
 
 	// PagerDuty
 	PagerDutyKey string `yaml:"pagerduty_key"`
@@ -23,12 +23,11 @@ type AlertConfig struct {
 	EmailUsername   string   `yaml:"email_username"`
 	EmailPassword   string   `yaml:"email_password"`
 
-	// Teams
-	TeamsURL string `yaml:"teams_url"`
+	// Microsoft Teams
+	TeamsWebhookURL string `yaml:"teams_webhook_url"`
 
 	// Datadog
-	DatadogKey  string   `yaml:"datadog_key"`
-	DatadogTags []string `yaml:"datadog_tags"`
+	DatadogAPIKey string `yaml:"datadog_api_key"`
 
 	// SNS
 	SNSTopicARN string `yaml:"sns_topic_arn"`
@@ -41,24 +40,26 @@ type AlertConfig struct {
 	VictorOpsURL string `yaml:"victorops_url"`
 
 	// Discord
-	DiscordURL string `yaml:"discord_url"`
+	DiscordWebhookURL string `yaml:"discord_webhook_url"`
 
 	// Google Chat
-	GoogleChatURL string `yaml:"googlechat_url"`
+	GoogleChatWebhookURL string `yaml:"googlechat_webhook_url"`
 
 	// Mattermost
-	MattermostURL      string `yaml:"mattermost_url"`
-	MattermostChannel  string `yaml:"mattermost_channel"`
-	MattermostUsername string `yaml:"mattermost_username"`
+	MattermostWebhookURL string `yaml:"mattermost_webhook_url"`
+	MattermostChannel    string `yaml:"mattermost_channel"`
+	MattermostUsername   string `yaml:"mattermost_username"`
 
 	// Splunk
 	SplunkURL   string `yaml:"splunk_url"`
 	SplunkToken string `yaml:"splunk_token"`
 	SplunkSource string `yaml:"splunk_source"`
-	SplunkIndex  string `yaml:"splunk_index"`
 
 	// Zenduty
-	ZendutyAPIKey      string `yaml:"zenduty_api_key"`
-	ZendutyServiceID   string `yaml:"zenduty_service_id"`
-	ZendutyEscalationID string `yaml:"zenduty_escalation_id"`
+	ZendutyAPIKey    string `yaml:"zenduty_api_key"`
+	ZendutyServiceID string `yaml:"zenduty_service_id"`
+
+	// New Relic
+	NewRelicAccountID string `yaml:"newrelic_account_id"`
+	NewRelicAPIKey    string `yaml:"newrelic_api_key"`
 }
