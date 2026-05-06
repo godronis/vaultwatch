@@ -1,7 +1,6 @@
 package config
 
-// AlertConfig holds configuration for all supported alerter integrations.
-// Only the fields relevant to a chosen alerter need to be populated.
+// AlertConfig holds configuration for all supported alerter backends.
 type AlertConfig struct {
 	// Webhook
 	WebhookURL     string            `yaml:"webhook_url"`
@@ -24,16 +23,15 @@ type AlertConfig struct {
 	EmailUsername   string   `yaml:"email_username"`
 	EmailPassword   string   `yaml:"email_password"`
 
-	// Microsoft Teams
+	// Teams
 	TeamsURL string `yaml:"teams_url"`
 
 	// Datadog
-	DatadogAPIKey string   `yaml:"datadog_api_key"`
-	DatadogTags   []string `yaml:"datadog_tags"`
+	DatadogKey  string   `yaml:"datadog_key"`
+	DatadogTags []string `yaml:"datadog_tags"`
 
 	// SNS
 	SNSTopicARN string `yaml:"sns_topic_arn"`
-	SNSRegion   string `yaml:"sns_region"`
 
 	// Telegram
 	TelegramToken  string `yaml:"telegram_token"`
@@ -53,8 +51,14 @@ type AlertConfig struct {
 	MattermostChannel  string `yaml:"mattermost_channel"`
 	MattermostUsername string `yaml:"mattermost_username"`
 
-	// Splunk HEC
-	SplunkURL    string `yaml:"splunk_url"`
-	SplunkToken  string `yaml:"splunk_token"`
+	// Splunk
+	SplunkURL   string `yaml:"splunk_url"`
+	SplunkToken string `yaml:"splunk_token"`
 	SplunkSource string `yaml:"splunk_source"`
+	SplunkIndex  string `yaml:"splunk_index"`
+
+	// Zenduty
+	ZendutyAPIKey      string `yaml:"zenduty_api_key"`
+	ZendutyServiceID   string `yaml:"zenduty_service_id"`
+	ZendutyEscalationID string `yaml:"zenduty_escalation_id"`
 }
