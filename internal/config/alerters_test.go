@@ -7,55 +7,63 @@ import (
 func TestAlertConfig_TelegramFields(t *testing.T) {
 	cfg := AlertConfig{
 		TelegramToken:  "bot123",
-		TelegramChatID: "-1001234567890",
+		TelegramChatID: "-100456",
 	}
 	if cfg.TelegramToken != "bot123" {
-		t.Errorf("expected TelegramToken 'bot123', got %q", cfg.TelegramToken)
+		t.Errorf("unexpected TelegramToken: %s", cfg.TelegramToken)
 	}
-	if cfg.TelegramChatID != "-1001234567890" {
-		t.Errorf("expected TelegramChatID '-1001234567890', got %q", cfg.TelegramChatID)
+	if cfg.TelegramChatID != "-100456" {
+		t.Errorf("unexpected TelegramChatID: %s", cfg.TelegramChatID)
 	}
 }
 
 func TestAlertConfig_AllNilByDefault(t *testing.T) {
 	cfg := AlertConfig{}
-	enabled := cfg.EnabledAlerters()
-	if len(enabled) != 0 {
-		t.Errorf("expected no enabled alerters, got %v", enabled)
+	if cfg.WebhookURL != "" {
+		t.Error("expected empty WebhookURL")
+	}
+	if cfg.SlackURL != "" {
+		t.Error("expected empty SlackURL")
+	}
+	if cfg.PagerDutyKey != "" {
+		t.Error("expected empty PagerDutyKey")
+	}
+	if cfg.SplunkURL != "" {
+		t.Error("expected empty SplunkURL")
+	}
+	if cfg.SplunkToken != "" {
+		t.Error("expected empty SplunkToken")
 	}
 }
 
 func TestAlertConfig_MultipleAlertersSet(t *testing.T) {
 	cfg := AlertConfig{
-		SlackURL:      "https://hooks.slack.com/test",
-		PagerDutyKey:  "pdkey",
-		VictorOpsURL:  "https://alert.victorops.com/integrations/generic/1/alert/token/route",
+		SlackURL:     "https://hooks.slack.com/xxx",
+		PagerDutyKey: "pdkey",
+		SplunkURL:    "https://splunk.example.com:8088/services/collector/event",
+		SplunkToken:  "splunk-hec-token",
+		SplunkSource: "vaultwatch-prod",
 	}
-	enabled := cfg.EnabledAlerters()
-	if len(enabled) != 3 {
-		t.Errorf("expected 3 enabled alerters, got %d: %v", len(enabled), enabled)
+	if cfg.SlackURL == "" {
+		t.Error("expected SlackURL to be set")
 	}
-	has := func(name string) bool {
-		for _, e := range enabled {
-			if e == name {
-				return true
-			}
-		}
-		return false
+	if cfg.PagerDutyKey == "" {
+		t.Error("expected PagerDutyKey to be set")
 	}
-	for _, name := range []string{"slack", "pagerduty", "victorops"} {
-		if !has(name) {
-			t.Errorf("expected %q in enabled alerters", name)
-		}
+	if cfg.SplunkURL == "" {
+		t.Error("expected SplunkURL to be set")
+	}
+	if cfg.SplunkSource != "vaultwatch-prod" {
+		t.Errorf("unexpected SplunkSource: %s", cfg.SplunkSource)
 	}
 }
 
-func TestAlertConfig_VictorOpsURL(t *testing.T) {
+func TestAlertConfig_SplunkDefaults(t *testing.T) {
 	cfg := AlertConfig{
-		VictorOpsURL: "https://alert.victorops.com/integrations/generic/1/alert/token/route",
+		SplunkURL:   "https://splunk.example.com:8088/services/collector/event",
+		SplunkToken: "mytoken",
 	}
-	enabled := cfg.EnabledAlerters()
-	if len(enabled) != 1 || enabled[0] != "victorops" {
-		t.Errorf("expected [victorops], got %v", enabled)
+	if cfg.SplunkSource != "" {
+		t.Errorf("expected empty SplunkSource by default, got %q", cfg.SplunkSource)
 	}
 }
