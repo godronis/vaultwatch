@@ -1,65 +1,106 @@
 package config
 
-// AlertConfig holds configuration for all supported alerter integrations.
+// AlertConfig holds optional configuration blocks for each supported alerter.
+// Only the alerters that are non-nil will be activated at runtime.
 type AlertConfig struct {
-	// Webhook
-	WebhookURL     string            `yaml:"webhook_url"`
-	WebhookHeaders map[string]string `yaml:"webhook_headers"`
+	Webhook   *WebhookConfig   `toml:"webhook"`
+	Slack     *SlackConfig     `toml:"slack"`
+	PagerDuty *PagerDutyConfig `toml:"pagerduty"`
+	OpsGenie  *OpsGenieConfig  `toml:"opsgenie"`
+	Email     *EmailConfig     `toml:"email"`
+	Teams     *TeamsConfig     `toml:"teams"`
+	Datadog   *DatadogConfig   `toml:"datadog"`
+	SNS       *SNSConfig       `toml:"sns"`
+	Telegram  *TelegramConfig  `toml:"telegram"`
+	VictorOps *VictorOpsConfig `toml:"victorops"`
+	Discord   *DiscordConfig   `toml:"discord"`
+	GoogleChat *GoogleChatConfig `toml:"googlechat"`
+	Mattermost *MattermostConfig `toml:"mattermost"`
+	Splunk    *SplunkConfig    `toml:"splunk"`
+	Zenduty   *ZendutyConfig   `toml:"zenduty"`
+	NewRelic  *NewRelicConfig  `toml:"newrelic"`
+	Jira      *JiraConfig      `toml:"jira"`
+}
 
-	// Slack
-	SlackWebhookURL string `yaml:"slack_webhook_url"`
+type WebhookConfig struct {
+	URL     string            `toml:"url"`
+	Headers map[string]string `toml:"headers"`
+}
 
-	// PagerDuty
-	PagerDutyKey string `yaml:"pagerduty_key"`
+type SlackConfig struct {
+	WebhookURL string `toml:"webhook_url"`
+}
 
-	// OpsGenie
-	OpsGenieKey string `yaml:"opsgenie_key"`
+type PagerDutyConfig struct {
+	IntegrationKey string `toml:"integration_key"`
+}
 
-	// Email
-	EmailHost       string   `yaml:"email_host"`
-	EmailPort       int      `yaml:"email_port"`
-	EmailFrom       string   `yaml:"email_from"`
-	EmailTo         []string `yaml:"email_to"`
-	EmailUsername   string   `yaml:"email_username"`
-	EmailPassword   string   `yaml:"email_password"`
+type OpsGenieConfig struct {
+	APIKey string `toml:"api_key"`
+}
 
-	// Microsoft Teams
-	TeamsWebhookURL string `yaml:"teams_webhook_url"`
+type EmailConfig struct {
+	Host       string   `toml:"host"`
+	Port       int      `toml:"port"`
+	From       string   `toml:"from"`
+	Recipients []string `toml:"recipients"`
+}
 
-	// Datadog
-	DatadogAPIKey string `yaml:"datadog_api_key"`
+type TeamsConfig struct {
+	WebhookURL string `toml:"webhook_url"`
+}
 
-	// SNS
-	SNSTopicARN string `yaml:"sns_topic_arn"`
+type DatadogConfig struct {
+	APIKey string `toml:"api_key"`
+}
 
-	// Telegram
-	TelegramToken  string `yaml:"telegram_token"`
-	TelegramChatID string `yaml:"telegram_chat_id"`
+type SNSConfig struct {
+	TopicARN string `toml:"topic_arn"`
+}
 
-	// VictorOps
-	VictorOpsURL string `yaml:"victorops_url"`
+type TelegramConfig struct {
+	BotToken string `toml:"bot_token"`
+	ChatID   string `toml:"chat_id"`
+}
 
-	// Discord
-	DiscordWebhookURL string `yaml:"discord_webhook_url"`
+type VictorOpsConfig struct {
+	WebhookURL string `toml:"webhook_url"`
+}
 
-	// Google Chat
-	GoogleChatWebhookURL string `yaml:"googlechat_webhook_url"`
+type DiscordConfig struct {
+	WebhookURL string `toml:"webhook_url"`
+}
 
-	// Mattermost
-	MattermostWebhookURL string `yaml:"mattermost_webhook_url"`
-	MattermostChannel    string `yaml:"mattermost_channel"`
-	MattermostUsername   string `yaml:"mattermost_username"`
+type GoogleChatConfig struct {
+	WebhookURL string `toml:"webhook_url"`
+}
 
-	// Splunk
-	SplunkURL   string `yaml:"splunk_url"`
-	SplunkToken string `yaml:"splunk_token"`
-	SplunkSource string `yaml:"splunk_source"`
+type MattermostConfig struct {
+	WebhookURL string `toml:"webhook_url"`
+	Channel    string `toml:"channel"`
+	Username   string `toml:"username"`
+}
 
-	// Zenduty
-	ZendutyAPIKey    string `yaml:"zenduty_api_key"`
-	ZendutyServiceID string `yaml:"zenduty_service_id"`
+type SplunkConfig struct {
+	URL   string `toml:"url"`
+	Token string `toml:"token"`
+	Source string `toml:"source"`
+}
 
-	// New Relic
-	NewRelicAccountID string `yaml:"newrelic_account_id"`
-	NewRelicAPIKey    string `yaml:"newrelic_api_key"`
+type ZendutyConfig struct {
+	APIKey    string `toml:"api_key"`
+	ServiceID string `toml:"service_id"`
+}
+
+type NewRelicConfig struct {
+	AccountID string `toml:"account_id"`
+	APIKey    string `toml:"api_key"`
+}
+
+// JiraConfig holds settings for the Jira alerter.
+type JiraConfig struct {
+	BaseURL   string `toml:"base_url"`
+	Token     string `toml:"token"`
+	Project   string `toml:"project"`
+	IssueType string `toml:"issue_type"`
 }

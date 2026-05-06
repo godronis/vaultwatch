@@ -4,66 +4,66 @@ import (
 	"testing"
 )
 
-func TestAlertConfig_TelegramFields(t *testing.T) {
-	cfg := AlertConfig{
-		TelegramToken:  "bot123",
-		TelegramChatID: "-100456",
+func TestAlertConfig_AllNilByDefault(t *testing.T) {
+	var ac AlertConfig
+	if ac.Webhook != nil || ac.Slack != nil || ac.PagerDuty != nil {
+		t.Error("expected all alerter configs to be nil by default")
 	}
-	if cfg.TelegramToken != "bot123" {
-		t.Errorf("unexpected TelegramToken: %s", cfg.TelegramToken)
-	}
-	if cfg.TelegramChatID != "-100456" {
-		t.Errorf("unexpected TelegramChatID: %s", cfg.TelegramChatID)
+	if ac.Jira != nil {
+		t.Error("expected Jira config to be nil by default")
 	}
 }
 
-func TestAlertConfig_AllNilByDefault(t *testing.T) {
-	cfg := AlertConfig{}
-	if cfg.WebhookURL != "" {
-		t.Error("expected empty WebhookURL")
+func TestAlertConfig_TelegramFields(t *testing.T) {
+	ac := AlertConfig{
+		Telegram: &TelegramConfig{
+			BotToken: "abc123",
+			ChatID:   "-100999",
+		},
 	}
-	if cfg.SlackURL != "" {
-		t.Error("expected empty SlackURL")
+	if ac.Telegram.BotToken != "abc123" {
+		t.Errorf("unexpected bot token: %q", ac.Telegram.BotToken)
 	}
-	if cfg.PagerDutyKey != "" {
-		t.Error("expected empty PagerDutyKey")
-	}
-	if cfg.SplunkURL != "" {
-		t.Error("expected empty SplunkURL")
-	}
-	if cfg.SplunkToken != "" {
-		t.Error("expected empty SplunkToken")
+	if ac.Telegram.ChatID != "-100999" {
+		t.Errorf("unexpected chat ID: %q", ac.Telegram.ChatID)
 	}
 }
 
 func TestAlertConfig_MultipleAlertersSet(t *testing.T) {
-	cfg := AlertConfig{
-		SlackURL:     "https://hooks.slack.com/xxx",
-		PagerDutyKey: "pdkey",
-		SplunkURL:    "https://splunk.example.com:8088/services/collector/event",
-		SplunkToken:  "splunk-hec-token",
-		SplunkSource: "vaultwatch-prod",
+	ac := AlertConfig{
+		Slack:     &SlackConfig{WebhookURL: "https://hooks.slack.com/test"},
+		PagerDuty: &PagerDutyConfig{IntegrationKey: "key123"},
+		Jira:      &JiraConfig{BaseURL: "https://jira.example.com", Token: "t", Project: "OPS"},
 	}
-	if cfg.SlackURL == "" {
-		t.Error("expected SlackURL to be set")
-	}
-	if cfg.PagerDutyKey == "" {
-		t.Error("expected PagerDutyKey to be set")
-	}
-	if cfg.SplunkURL == "" {
-		t.Error("expected SplunkURL to be set")
-	}
-	if cfg.SplunkSource != "vaultwatch-prod" {
-		t.Errorf("unexpected SplunkSource: %s", cfg.SplunkSource)
+	if ac.Slack == nil || ac.PagerDuty == nil || ac.Jira == nil {
+		t.Error("expected Slack, PagerDuty, and Jira configs to be set")
 	}
 }
 
 func TestAlertConfig_SplunkDefaults(t *testing.T) {
-	cfg := AlertConfig{
-		SplunkURL:   "https://splunk.example.com:8088/services/collector/event",
-		SplunkToken: "mytoken",
+	ac := AlertConfig{
+		Splunk: &SplunkConfig{
+			URL:   "https://splunk.example.com",
+			Token: "splunk-token",
+		},
 	}
-	if cfg.SplunkSource != "" {
-		t.Errorf("expected empty SplunkSource by default, got %q", cfg.SplunkSource)
+	if ac.Splunk.Source != "" {
+		t.Errorf("expected empty source by default, got %q", ac.Splunk.Source)
+	}
+}
+
+func TestAlertConfig_JiraDefaults(t *testing.T) {
+	ac := AlertConfig{
+		Jira: &JiraConfig{
+			BaseURL: "https://jira.example.com",
+			Token:   "mytoken",
+			Project: "SEC",
+		},
+	}
+	if ac.Jira.IssueType != "" {
+		t.Errorf("expected empty IssueType by default, got %q", ac.Jira.IssueType)
+	}
+	if ac.Jira.Project != "SEC" {
+		t.Errorf("expected project 'SEC', got %q", ac.Jira.Project)
 	}
 }
