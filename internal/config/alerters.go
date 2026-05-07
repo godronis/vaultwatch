@@ -1,6 +1,7 @@
 package config
 
 // AlertConfig holds optional configuration blocks for each supported alerter.
+// Only non-nil blocks will be used when building the multi-alerter at startup.
 type AlertConfig struct {
 	Webhook       *WebhookConfig       `yaml:"webhook,omitempty"`
 	Slack         *SlackConfig         `yaml:"slack,omitempty"`
@@ -21,6 +22,7 @@ type AlertConfig struct {
 	Jira          *JiraConfig          `yaml:"jira,omitempty"`
 	SignalSciences *SignalSciencesConfig `yaml:"signalsciences,omitempty"`
 	CircleCI      *CircleCIConfig      `yaml:"circleci,omitempty"`
+	Grafana       *GrafanaConfig       `yaml:"grafana,omitempty"`
 }
 
 type WebhookConfig struct {
@@ -119,4 +121,8 @@ type SignalSciencesConfig struct {
 
 type CircleCIConfig struct {
 	Token string `yaml:"token"`
+}
+
+type GrafanaConfig struct {
+	WebhookURL string `yaml:"webhook_url"`
 }

@@ -5,71 +5,84 @@ import (
 )
 
 func TestAlertConfig_AllNilByDefault(t *testing.T) {
-	var ac AlertConfig
-	if ac.Webhook != nil || ac.Slack != nil || ac.PagerDuty != nil {
-		t.Error("expected all alerters to be nil by default")
+	var cfg AlertConfig
+	if cfg.Webhook != nil {
+		t.Error("expected Webhook to be nil")
 	}
-	if ac.CircleCI != nil {
-		t.Error("expected CircleCI to be nil by default")
+	if cfg.Slack != nil {
+		t.Error("expected Slack to be nil")
+	}
+	if cfg.Grafana != nil {
+		t.Error("expected Grafana to be nil")
 	}
 }
 
 func TestAlertConfig_TelegramFields(t *testing.T) {
-	ac := AlertConfig{
+	cfg := AlertConfig{
 		Telegram: &TelegramConfig{
-			Token:  "bot123",
-			ChatID: "-100456",
+			Token:  "bot-token",
+			ChatID: "-100123456",
 		},
 	}
-	if ac.Telegram.Token != "bot123" {
-		t.Errorf("unexpected token: %s", ac.Telegram.Token)
+	if cfg.Telegram.Token != "bot-token" {
+		t.Errorf("expected token 'bot-token', got %s", cfg.Telegram.Token)
 	}
-	if ac.Telegram.ChatID != "-100456" {
-		t.Errorf("unexpected chat_id: %s", ac.Telegram.ChatID)
+	if cfg.Telegram.ChatID != "-100123456" {
+		t.Errorf("expected chat_id '-100123456', got %s", cfg.Telegram.ChatID)
 	}
 }
 
 func TestAlertConfig_MultipleAlertersSet(t *testing.T) {
-	ac := AlertConfig{
-		Slack:     &SlackConfig{WebhookURL: "https://hooks.slack.com/x"},
-		PagerDuty: &PagerDutyConfig{IntegrationKey: "abc"},
-		CircleCI:  &CircleCIConfig{Token: "mytoken"},
+	cfg := AlertConfig{
+		Slack:     &SlackConfig{WebhookURL: "https://hooks.slack.com/xxx"},
+		PagerDuty: &PagerDutyConfig{IntegrationKey: "abc123"},
+		Grafana:   &GrafanaConfig{WebhookURL: "https://grafana.example.com/webhook"},
 	}
-	if ac.Slack == nil {
+	if cfg.Slack == nil {
 		t.Error("expected Slack to be set")
 	}
-	if ac.PagerDuty == nil {
+	if cfg.PagerDuty == nil {
 		t.Error("expected PagerDuty to be set")
 	}
-	if ac.CircleCI == nil {
-		t.Error("expected CircleCI to be set")
+	if cfg.Grafana == nil {
+		t.Error("expected Grafana to be set")
 	}
-	if ac.CircleCI.Token != "mytoken" {
-		t.Errorf("unexpected CircleCI token: %s", ac.CircleCI.Token)
+	if cfg.Webhook != nil {
+		t.Error("expected Webhook to remain nil")
 	}
 }
 
 func TestAlertConfig_SplunkDefaults(t *testing.T) {
-	ac := AlertConfig{
-		Splunk: &SplunkConfig{
-			URL:   "https://splunk.example.com",
-			Token: "hec-token",
-		},
+	cfg := SplunkConfig{
+		URL:   "https://splunk.example.com",
+		Token: "splunk-hec-token",
 	}
-	if ac.Splunk.Source != "" {
-		t.Errorf("expected empty source by default, got %s", ac.Splunk.Source)
+	if cfg.Source != "" {
+		t.Errorf("expected empty Source by default, got %s", cfg.Source)
+	}
+	if cfg.Index != "" {
+		t.Errorf("expected empty Index by default, got %s", cfg.Index)
 	}
 }
 
 func TestAlertConfig_JiraDefaults(t *testing.T) {
-	ac := AlertConfig{
-		Jira: &JiraConfig{
-			URL:     "https://jira.example.com",
-			Token:   "jira-token",
-			Project: "OPS",
+	cfg := JiraConfig{
+		URL:     "https://jira.example.com",
+		Token:   "jira-token",
+		Project: "OPS",
+	}
+	if cfg.IssueType != "" {
+		t.Errorf("expected empty IssueType by default, got %s", cfg.IssueType)
+	}
+}
+
+func TestAlertConfig_GrafanaField(t *testing.T) {
+	cfg := AlertConfig{
+		Grafana: &GrafanaConfig{
+			WebhookURL: "https://grafana.example.com/api/alerts",
 		},
 	}
-	if ac.Jira.IssueType != "" {
-		t.Errorf("expected empty issue_type by default, got %s", ac.Jira.IssueType)
+	if cfg.Grafana.WebhookURL != "https://grafana.example.com/api/alerts" {
+		t.Errorf("unexpected WebhookURL: %s", cfg.Grafana.WebhookURL)
 	}
 }
