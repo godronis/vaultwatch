@@ -5,75 +5,87 @@ import (
 )
 
 func TestAlertConfig_AllNilByDefault(t *testing.T) {
-	var cfg AlertConfig
-	if cfg.Webhook != nil {
-		t.Error("expected Webhook to be nil")
+	var ac AlertConfig
+	if ac.Slack != nil || ac.PagerDuty != nil || ac.OpsGenie != nil {
+		t.Error("expected all alerter configs to be nil by default")
 	}
-	if cfg.Slack != nil {
-		t.Error("expected Slack to be nil")
-	}
-	if cfg.PagerDutyV2 != nil {
-		t.Error("expected PagerDutyV2 to be nil")
+	if ac.VictorOpsV2 != nil {
+		t.Error("expected VictorOpsV2 to be nil by default")
 	}
 }
 
 func TestAlertConfig_TelegramFields(t *testing.T) {
-	cfg := AlertConfig{
+	ac := AlertConfig{
 		Telegram: &TelegramConfig{
-			Token:  "bot-token",
-			ChatID: "12345",
+			BotToken: "bot123",
+			ChatID:   "-100123456",
 		},
 	}
-	if cfg.Telegram.Token != "bot-token" {
-		t.Errorf("expected token 'bot-token', got %s", cfg.Telegram.Token)
+	if ac.Telegram.BotToken != "bot123" {
+		t.Errorf("unexpected bot token: %s", ac.Telegram.BotToken)
 	}
-	if cfg.Telegram.ChatID != "12345" {
-		t.Errorf("expected chat_id '12345', got %s", cfg.Telegram.ChatID)
+	if ac.Telegram.ChatID != "-100123456" {
+		t.Errorf("unexpected chat id: %s", ac.Telegram.ChatID)
 	}
 }
 
 func TestAlertConfig_MultipleAlertersSet(t *testing.T) {
-	cfg := AlertConfig{
-		Slack:       &SlackConfig{WebhookURL: "https://hooks.slack.com/test"},
-		PagerDutyV2: &PagerDutyV2Config{IntegrationKey: "key-123"},
-		Datadog:     &DatadogConfig{APIKey: "dd-key"},
+	ac := AlertConfig{
+		Slack:     &SlackConfig{WebhookURL: "https://hooks.slack.com/"},
+		PagerDuty: &PagerDutyConfig{IntegrationKey: "abc123"},
+		Email: &EmailConfig{
+			Host:       "smtp.example.com",
+			From:       "alerts@example.com",
+			Recipients: []string{"ops@example.com"},
+		},
 	}
-	if cfg.Slack == nil || cfg.PagerDutyV2 == nil || cfg.Datadog == nil {
-		t.Error("expected all three alerters to be set")
+	if ac.Slack == nil || ac.PagerDuty == nil || ac.Email == nil {
+		t.Error("expected multiple alerters to be set")
 	}
 }
 
 func TestAlertConfig_SplunkDefaults(t *testing.T) {
-	cfg := SplunkConfig{
-		URL:   "https://splunk.example.com",
-		Token: "splunk-token",
+	ac := AlertConfig{
+		Splunk: &SplunkConfig{
+			URL:   "https://splunk.example.com",
+			Token: "hec-token",
+		},
 	}
-	if cfg.Source != "" {
-		t.Errorf("expected empty Source by default, got %s", cfg.Source)
+	if ac.Splunk.Source != "" {
+		t.Errorf("expected empty source, got %s", ac.Splunk.Source)
 	}
-	if cfg.Index != "" {
-		t.Errorf("expected empty Index by default, got %s", cfg.Index)
+	if ac.Splunk.Index != "" {
+		t.Errorf("expected empty index, got %s", ac.Splunk.Index)
 	}
 }
 
 func TestAlertConfig_JiraDefaults(t *testing.T) {
-	cfg := JiraConfig{
-		URL:     "https://jira.example.com",
-		Token:   "jira-token",
-		Project: "OPS",
+	ac := AlertConfig{
+		Jira: &JiraConfig{
+			URL:     "https://jira.example.com",
+			Token:   "token",
+			Project: "OPS",
+		},
 	}
-	if cfg.IssueType != "" {
-		t.Errorf("expected empty IssueType by default, got %s", cfg.IssueType)
+	if ac.Jira.IssueType != "" {
+		t.Errorf("expected empty issue type, got %s", ac.Jira.IssueType)
 	}
 }
 
-func TestAlertConfig_PagerDutyV2Fields(t *testing.T) {
-	cfg := AlertConfig{
-		PagerDutyV2: &PagerDutyV2Config{
-			IntegrationKey: "routing-key-abc",
+func TestAlertConfig_VictorOpsV2Fields(t *testing.T) {
+	ac := AlertConfig{
+		VictorOpsV2: &VictorOpsV2Config{
+			RESTEndpoint: "https://alert.victorops.com/integrations/generic/v2",
+			RoutingKey:   "my-routing-key",
 		},
 	}
-	if cfg.PagerDutyV2.IntegrationKey != "routing-key-abc" {
-		t.Errorf("expected integration key 'routing-key-abc', got %s", cfg.PagerDutyV2.IntegrationKey)
+	if ac.VictorOpsV2 == nil {
+		t.Fatal("expected VictorOpsV2 to be set")
+	}
+	if ac.VictorOpsV2.RESTEndpoint == "" {
+		t.Error("expected non-empty REST endpoint")
+	}
+	if ac.VictorOpsV2.RoutingKey == "" {
+		t.Error("expected non-empty routing key")
 	}
 }

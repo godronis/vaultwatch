@@ -1,7 +1,6 @@
 package config
 
-// AlertConfig holds optional configuration for each supported alerter.
-// Only fields for enabled alerters need to be populated.
+// AlertConfig holds configuration for all supported alerter integrations.
 type AlertConfig struct {
 	Webhook       *WebhookConfig       `yaml:"webhook,omitempty"`
 	Slack         *SlackConfig         `yaml:"slack,omitempty"`
@@ -14,6 +13,7 @@ type AlertConfig struct {
 	SNS           *SNSConfig           `yaml:"sns,omitempty"`
 	Telegram      *TelegramConfig      `yaml:"telegram,omitempty"`
 	VictorOps     *VictorOpsConfig     `yaml:"victorops,omitempty"`
+	VictorOpsV2   *VictorOpsV2Config   `yaml:"victorops_v2,omitempty"`
 	Discord       *DiscordConfig       `yaml:"discord,omitempty"`
 	GoogleChat    *GoogleChatConfig    `yaml:"googlechat,omitempty"`
 	Mattermost    *MattermostConfig    `yaml:"mattermost,omitempty"`
@@ -38,11 +38,11 @@ type SlackConfig struct {
 }
 
 type PagerDutyConfig struct {
-	APIKey string `yaml:"api_key"`
+	IntegrationKey string `yaml:"integration_key"`
 }
 
 type PagerDutyV2Config struct {
-	IntegrationKey string `yaml:"integration_key"`
+	RoutingKey string `yaml:"routing_key"`
 }
 
 type OpsGenieConfig struct {
@@ -68,15 +68,22 @@ type DatadogConfig struct {
 
 type SNSConfig struct {
 	TopicARN string `yaml:"topic_arn"`
+	Region   string `yaml:"region,omitempty"`
 }
 
 type TelegramConfig struct {
-	Token  string `yaml:"token"`
-	ChatID string `yaml:"chat_id"`
+	BotToken string `yaml:"bot_token"`
+	ChatID   string `yaml:"chat_id"`
 }
 
 type VictorOpsConfig struct {
-	WebhookURL string `yaml:"webhook_url"`
+	RESTEndpoint string `yaml:"rest_endpoint"`
+	RoutingKey   string `yaml:"routing_key"`
+}
+
+type VictorOpsV2Config struct {
+	RESTEndpoint string `yaml:"rest_endpoint"`
+	RoutingKey   string `yaml:"routing_key"`
 }
 
 type DiscordConfig struct {
@@ -97,7 +104,7 @@ type SplunkConfig struct {
 	URL        string `yaml:"url"`
 	Token      string `yaml:"token"`
 	Source     string `yaml:"source,omitempty"`
-	SourceType string `yaml:"sourcetype,omitempty"`
+	SourceType string `yaml:"source_type,omitempty"`
 	Index      string `yaml:"index,omitempty"`
 }
 
@@ -126,11 +133,12 @@ type SignalSciencesConfig struct {
 }
 
 type CircleCIConfig struct {
-	Token string `yaml:"token"`
+	Token     string `yaml:"token"`
+	ProjectID string `yaml:"project_id,omitempty"`
 }
 
 type GrafanaConfig struct {
-	URL string `yaml:"url"`
+	WebhookURL string `yaml:"webhook_url"`
 }
 
 type RocketChatConfig struct {
