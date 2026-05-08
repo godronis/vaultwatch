@@ -33,6 +33,18 @@ func TestNewTelegramAlerter_ValidConfig(t *testing.T) {
 	}
 }
 
+// newTestAlerter creates a TelegramAlerter wired to the given test server.
+func newTestAlerter(t *testing.T, server *httptest.Server, botToken, chatID string) *TelegramAlerter {
+	t.Helper()
+	a := &TelegramAlerter{
+		botToken: botToken,
+		chatID:   chatID,
+		client:   server.Client(),
+	}
+	a.client.Transport = rewriteToServer(server.URL)
+	return a
+}
+
 func TestTelegramAlerter_Send_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -45,13 +57,7 @@ func TestTelegramAlerter_Send_Success(t *testing.T) {
 	}))
 	defer server.Close()
 
-	a := &TelegramAlerter{
-		botToken: "testtoken",
-		chatID:   "12345",
-		client:   server.Client(),
-	}
-	// Override the URL by patching the transport to redirect to test server.
-	a.client.Transport = rewriteToServer(server.URL)
+	a := newTestAlerter(t, server, "testtoken", "12345")
 
 	secret := vault.SecretMeta{
 		Path:       "secret/db/password",
@@ -68,12 +74,7 @@ func TestTelegramAlerter_Send_NonOKStatus(t *testing.T) {
 	}))
 	defer server.Close()
 
-	a := &TelegramAlerter{
-		botToken: "badtoken",
-		chatID:   "12345",
-		client:   server.Client(),
-	}
-	a.client.Transport = rewriteToServer(server.URL)
+	a := newTestAlerter(t, server, "badtoken", "12345")
 
 	secret := vault.SecretMeta{
 		Path:       "secret/api/key",
