@@ -1,11 +1,12 @@
 package config
 
-// AlertConfig holds optional configuration blocks for each supported alerter.
-// Only non-nil blocks will be used when building the multi-alerter at startup.
+// AlertConfig holds optional configuration for each supported alerter.
+// Only fields for enabled alerters need to be populated.
 type AlertConfig struct {
 	Webhook       *WebhookConfig       `yaml:"webhook,omitempty"`
 	Slack         *SlackConfig         `yaml:"slack,omitempty"`
 	PagerDuty     *PagerDutyConfig     `yaml:"pagerduty,omitempty"`
+	PagerDutyV2   *PagerDutyV2Config   `yaml:"pagerduty_v2,omitempty"`
 	OpsGenie      *OpsGenieConfig      `yaml:"opsgenie,omitempty"`
 	Email         *EmailConfig         `yaml:"email,omitempty"`
 	Teams         *TeamsConfig         `yaml:"teams,omitempty"`
@@ -23,6 +24,8 @@ type AlertConfig struct {
 	SignalSciences *SignalSciencesConfig `yaml:"signalsciences,omitempty"`
 	CircleCI      *CircleCIConfig      `yaml:"circleci,omitempty"`
 	Grafana       *GrafanaConfig       `yaml:"grafana,omitempty"`
+	RocketChat    *RocketChatConfig    `yaml:"rocketchat,omitempty"`
+	StatusPage    *StatusPageConfig    `yaml:"statuspage,omitempty"`
 }
 
 type WebhookConfig struct {
@@ -35,6 +38,10 @@ type SlackConfig struct {
 }
 
 type PagerDutyConfig struct {
+	APIKey string `yaml:"api_key"`
+}
+
+type PagerDutyV2Config struct {
 	IntegrationKey string `yaml:"integration_key"`
 }
 
@@ -61,7 +68,6 @@ type DatadogConfig struct {
 
 type SNSConfig struct {
 	TopicARN string `yaml:"topic_arn"`
-	Region   string `yaml:"region,omitempty"`
 }
 
 type TelegramConfig struct {
@@ -124,5 +130,15 @@ type CircleCIConfig struct {
 }
 
 type GrafanaConfig struct {
+	URL string `yaml:"url"`
+}
+
+type RocketChatConfig struct {
 	WebhookURL string `yaml:"webhook_url"`
+}
+
+type StatusPageConfig struct {
+	APIKey      string `yaml:"api_key"`
+	PageID      string `yaml:"page_id"`
+	ComponentID string `yaml:"component_id"`
 }

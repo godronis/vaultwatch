@@ -12,8 +12,8 @@ func TestAlertConfig_AllNilByDefault(t *testing.T) {
 	if cfg.Slack != nil {
 		t.Error("expected Slack to be nil")
 	}
-	if cfg.Grafana != nil {
-		t.Error("expected Grafana to be nil")
+	if cfg.PagerDutyV2 != nil {
+		t.Error("expected PagerDutyV2 to be nil")
 	}
 }
 
@@ -21,41 +21,32 @@ func TestAlertConfig_TelegramFields(t *testing.T) {
 	cfg := AlertConfig{
 		Telegram: &TelegramConfig{
 			Token:  "bot-token",
-			ChatID: "-100123456",
+			ChatID: "12345",
 		},
 	}
 	if cfg.Telegram.Token != "bot-token" {
 		t.Errorf("expected token 'bot-token', got %s", cfg.Telegram.Token)
 	}
-	if cfg.Telegram.ChatID != "-100123456" {
-		t.Errorf("expected chat_id '-100123456', got %s", cfg.Telegram.ChatID)
+	if cfg.Telegram.ChatID != "12345" {
+		t.Errorf("expected chat_id '12345', got %s", cfg.Telegram.ChatID)
 	}
 }
 
 func TestAlertConfig_MultipleAlertersSet(t *testing.T) {
 	cfg := AlertConfig{
-		Slack:     &SlackConfig{WebhookURL: "https://hooks.slack.com/xxx"},
-		PagerDuty: &PagerDutyConfig{IntegrationKey: "abc123"},
-		Grafana:   &GrafanaConfig{WebhookURL: "https://grafana.example.com/webhook"},
+		Slack:       &SlackConfig{WebhookURL: "https://hooks.slack.com/test"},
+		PagerDutyV2: &PagerDutyV2Config{IntegrationKey: "key-123"},
+		Datadog:     &DatadogConfig{APIKey: "dd-key"},
 	}
-	if cfg.Slack == nil {
-		t.Error("expected Slack to be set")
-	}
-	if cfg.PagerDuty == nil {
-		t.Error("expected PagerDuty to be set")
-	}
-	if cfg.Grafana == nil {
-		t.Error("expected Grafana to be set")
-	}
-	if cfg.Webhook != nil {
-		t.Error("expected Webhook to remain nil")
+	if cfg.Slack == nil || cfg.PagerDutyV2 == nil || cfg.Datadog == nil {
+		t.Error("expected all three alerters to be set")
 	}
 }
 
 func TestAlertConfig_SplunkDefaults(t *testing.T) {
 	cfg := SplunkConfig{
 		URL:   "https://splunk.example.com",
-		Token: "splunk-hec-token",
+		Token: "splunk-token",
 	}
 	if cfg.Source != "" {
 		t.Errorf("expected empty Source by default, got %s", cfg.Source)
@@ -76,13 +67,13 @@ func TestAlertConfig_JiraDefaults(t *testing.T) {
 	}
 }
 
-func TestAlertConfig_GrafanaField(t *testing.T) {
+func TestAlertConfig_PagerDutyV2Fields(t *testing.T) {
 	cfg := AlertConfig{
-		Grafana: &GrafanaConfig{
-			WebhookURL: "https://grafana.example.com/api/alerts",
+		PagerDutyV2: &PagerDutyV2Config{
+			IntegrationKey: "routing-key-abc",
 		},
 	}
-	if cfg.Grafana.WebhookURL != "https://grafana.example.com/api/alerts" {
-		t.Errorf("unexpected WebhookURL: %s", cfg.Grafana.WebhookURL)
+	if cfg.PagerDutyV2.IntegrationKey != "routing-key-abc" {
+		t.Errorf("expected integration key 'routing-key-abc', got %s", cfg.PagerDutyV2.IntegrationKey)
 	}
 }

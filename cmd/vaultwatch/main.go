@@ -1,9 +1,6 @@
-// main is the entry point for the vaultwatch CLI tool.
-// It loads configuration, initializes alerters, and runs the Vault secret monitor.
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -13,119 +10,117 @@ import (
 	"github.com/your-org/vaultwatch/internal/vault"
 )
 
-const defaultConfigPath = "vaultwatch.yaml"
-
 func main() {
-	configPath := flag.String("config", defaultConfigPath, "path to configuration file")
-	verbose := flag.Bool("verbose", false, "enable verbose logging")
-	flag.Parse()
-
-	if _, err := os.Stat(*configPath); os.IsNotExist(err) {
-		log.Fatalf("config file not found: %s", *configPath)
+	cfgPath := "vaultwatch.yaml"
+	if len(os.Args) > 1 {
+		cfgPath = os.Args[1]
 	}
 
-	cfg, err := config.Load(*configPath)
+	cfg, err := config.Load(cfgPath)
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	if *verbose {
-		log.Printf("loaded config: vault address=%s, warn_before=%s, paths=%d",
-			cfg.Vault.Address, cfg.WarnBefore, len(cfg.Paths))
-	}
-
-	vaultClient, err := vault.NewClient(cfg.Vault.Address, cfg.Vault.Token)
+	client, err := vault.NewClient(cfg.Vault.Address, cfg.Vault.Token)
 	if err != nil {
 		log.Fatalf("failed to create vault client: %v", err)
 	}
 
-	alerter, err := buildAlerter(cfg)
+	alerter, err := buildAlerter(cfg.Alerts)
 	if err != nil {
-		log.Fatalf("failed to initialize alerters: %v", err)
+		log.Fatalf("failed to build alerter: %v", err)
 	}
 
-	if err := vault.Monitor(vaultClient, alerter, cfg.Paths, cfg.WarnBefore); err != nil {
-		log.Fatalf("monitor run failed: %v", err)
-	}
-
-	if *verbose {
-		log.Println("vaultwatch completed successfully")
+	if err := vault.Monitor(client, cfg.Vault.Paths, cfg.Vault.WarnBefore, alerter); err != nil {
+		log.Fatalf("monitor error: %v", err)
 	}
 }
 
-// buildAlerter constructs a MultiAlerter from the configured alert backends.
-// Returns an error if no alerters are configured or any alerter fails to initialize.
-func buildAlerter(cfg *config.Config) (alert.Alerter, error) {
+func buildAlerter(cfg config.AlertConfig) (alert.Alerter, error) {
 	var alerters []alert.Alerter
 
-	if a := cfg.Alerts; a != nil {
-		if a.Webhook != nil {
-			w, err := alert.NewWebhookAlerter(a.Webhook.URL, a.Webhook.Headers)
-			if err != nil {
-				return nil, fmt.Errorf("webhook alerter: %w", err)
-			}
-			alerters = append(alerters, w)
+	if cfg.Webhook != nil {
+		a, err := alert.NewWebhookAlerter(cfg.Webhook.URL, cfg.Webhook.Headers)
+		if err != nil {
+			return nil, fmt.Errorf("webhook alerter: %w", err)
 		}
+		alerters = append(alerters, a)
+	}
 
-		if a.Slack != nil {
-			s, err := alert.NewSlackAlerter(a.Slack.WebhookURL)
-			if err != nil {
-				return nil, fmt.Errorf("slack alerter: %w", err)
-			}
-			alerters = append(alerters, s)
+	if cfg.Slack != nil {
+		a, err := alert.NewSlackAlerter(cfg.Slack.WebhookURL)
+		if err != nil {
+			return nil, fmt.Errorf("slack alerter: %w", err)
 		}
+		alerters = append(alerters, a)
+	}
 
-		if a.PagerDuty != nil {
-			p, err := alert.NewPagerDutyAlerter(a.PagerDuty.IntegrationKey)
-			if err != nil {
-				return nil, fmt.Errorf("pagerduty alerter: %w", err)
-			}
-			alerters = append(alerters, p)
+	if cfg.PagerDuty != nil {
+		a, err := alert.NewPagerDutyAlerter(cfg.PagerDuty.APIKey)
+		if err != nil {
+			return nil, fmt.Errorf("pagerduty alerter: %w", err)
 		}
+		alerters = append(alerters, a)
+	}
 
-		if a.OpsGenie != nil {
-			o, err := alert.NewOpsGenieAlerter(a.OpsGenie.APIKey)
-			if err != nil {
-				return nil, fmt.Errorf("opsgenie alerter: %w", err)
-			}
-			alerters = append(alerters, o)
+	if cfg.PagerDutyV2 != nil {
+		a, err := alert.NewPagerDutyV2Alerter(cfg.PagerDutyV2.IntegrationKey)
+		if err != nil {
+			return nil, fmt.Errorf("pagerduty v2 alerter: %w", err)
 		}
+		alerters = append(alerters, a)
+	}
 
-		if a.Email != nil {
-			e, err := alert.NewEmailAlerter(a.Email.Host, a.Email.Port, a.Email.From, a.Email.To)
-			if err != nil {
-				return nil, fmt.Errorf("email alerter: %w", err)
-			}
-			alerters = append(alerters, e)
+	if cfg.OpsGenie != nil {
+		a, err := alert.NewOpsGenieAlerter(cfg.OpsGenie.APIKey)
+		if err != nil {
+			return nil, fmt.Errorf("opsgenie alerter: %w", err)
 		}
+		alerters = append(alerters, a)
+	}
 
-		if a.Teams != nil {
-			t, err := alert.NewTeamsAlerter(a.Teams.WebhookURL)
-			if err != nil {
-				return nil, fmt.Errorf("teams alerter: %w", err)
-			}
-			alerters = append(alerters, t)
+	if cfg.Email != nil {
+		a, err := alert.NewEmailAlerter(cfg.Email.Host, cfg.Email.Port, cfg.Email.From, cfg.Email.Recipients, cfg.Email.Username, cfg.Email.Password)
+		if err != nil {
+			return nil, fmt.Errorf("email alerter: %w", err)
 		}
+		alerters = append(alerters, a)
+	}
 
-		if a.Telegram != nil {
-			tg, err := alert.NewTelegramAlerter(a.Telegram.BotToken, a.Telegram.ChatID)
-			if err != nil {
-				return nil, fmt.Errorf("telegram alerter: %w", err)
-			}
-			alerters = append(alerters, tg)
+	if cfg.Teams != nil {
+		a, err := alert.NewTeamsAlerter(cfg.Teams.WebhookURL)
+		if err != nil {
+			return nil, fmt.Errorf("teams alerter: %w", err)
 		}
+		alerters = append(alerters, a)
+	}
 
-		if a.Discord != nil {
-			d, err := alert.NewDiscordAlerter(a.Discord.WebhookURL)
-			if err != nil {
-				return nil, fmt.Errorf("discord alerter: %w", err)
-			}
-			alerters = append(alerters, d)
+	if cfg.Telegram != nil {
+		a, err := alert.NewTelegramAlerter(cfg.Telegram.Token, cfg.Telegram.ChatID)
+		if err != nil {
+			return nil, fmt.Errorf("telegram alerter: %w", err)
 		}
+		alerters = append(alerters, a)
+	}
+
+	if cfg.Discord != nil {
+		a, err := alert.NewDiscordAlerter(cfg.Discord.WebhookURL)
+		if err != nil {
+			return nil, fmt.Errorf("discord alerter: %w", err)
+		}
+		alerters = append(alerters, a)
+	}
+
+	if cfg.Splunk != nil {
+		a, err := alert.NewSplunkAlerter(cfg.Splunk.URL, cfg.Splunk.Token, cfg.Splunk.Source, cfg.Splunk.SourceType, cfg.Splunk.Index)
+		if err != nil {
+			return nil, fmt.Errorf("splunk alerter: %w", err)
+		}
+		alerters = append(alerters, a)
 	}
 
 	if len(alerters) == 0 {
-		return nil, fmt.Errorf("no alerters configured: at least one alert backend must be specified")
+		return nil, fmt.Errorf("no alerters configured")
 	}
 
 	return alert.NewMultiAlerter(alerters...), nil
